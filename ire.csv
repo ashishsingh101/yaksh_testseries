@@ -1,0 +1,7 @@
+,id,summary,description,points,negative_marks,language,topic,type,active,snippet,user_id,partial_grading,grade_assignment_upload,min_time,solution
+0,11,Square of two numbers,Write a Java code which will take an <b>integer as input</b> and <b>print the square</b> of the integer -,1.0,-1.0,java,,code,False,"import java.util.Scanner;
+class Test{
+public static void main(String args[]){
+// Write your code here
+}
+}",1,True,False,0,
