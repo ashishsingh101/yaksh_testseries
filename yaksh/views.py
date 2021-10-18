@@ -1392,8 +1392,9 @@ def quit(request, reason=None, attempt_num=None, questionpaper_id=None,
                                     attempt_number=attempt_num,
                                     question_paper=questionpaper_id,
                                     course_id=course_id)
+    course=Course.objects.get(id=course_id)
     context = {'paper': paper, 'message': reason, 'course_id': course_id,
-               'module_id': module_id}
+               'module_id': module_id,'course':course}
     return my_render_to_response(request, 'yaksh/quit.html', context)
 
 from collections import Counter
@@ -1483,7 +1484,7 @@ def complete(request, reason=None, attempt_num=None, questionpaper_id=None,
             percentage=request.POST.get('percentage',f'{percentage}')
             result=request.POST.get('result', f'{result}')
             status=request.POST.get('status','completed')
-            course_name=request.POST.get('course_name', f'{course_name_quiz}')
+            course_name=request.POST.get('course_name', '')
          
             real_answer_paper=Real_Answer_Paper(username=username,
                 attempt_number=attempt_number,
@@ -4920,8 +4921,8 @@ def your_premium_course(request):
 @login_required
 @email_verified
 def statistics(request):
-    user=request.user
-    user_details=Real_Answer_Paper.objects.filter(username=user.username)
+    userr=request.user
+    user_details=AnswerPaper.objects.filter(user=userr.id)
 
     marks_list= ([(item.marks_obtained) for item in user_details])
     total_marks_obtained=sum(marks_list)
@@ -4930,9 +4931,4 @@ def statistics(request):
     total_attempt=len(attempt_list)
 
     context={'total_attempt':total_attempt,'total_marks_obtained':total_marks_obtained,'user_details':user_details}
-    return render(request, 'yaksh/user_statistics.html',context)
-
-
-
-
-    
+    return render(request, 'yaksh/user_statistics.html',context) 
