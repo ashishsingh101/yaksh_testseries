@@ -82,25 +82,27 @@
           </form>
         </div>
       </div>
-      <span >
-        <span style="padding-right:35px ;">
+
+      <div >
+        <div style="padding-right:35px ;">
           <a href="{% url 'password_reset' %}" class="text-muted"><small>Forgot password?  </small></a>
-        </span>
-        <span style="padding-right: 35px;">
-          <a href="{% url 'yaksh:teacher_register' %}" class="text-muted"><small>Create teacher acc. </small></a>
-        </span>
-        <span style="padding-right: 35px;">
-          <a href="{% url 'yaksh:register' %}" class="text-muted"><small>Create user acc.</small></a>
-        </span>
-      </span>
-      <span>
-        <span style="padding-right: 35px;">
-          <a href="{% url 'yaksh:hod_register' %}" class="text-muted"><small>Create HOD acc.</small></a>
-        </span>
-        <span style="padding-right: 35px;">
-          <a href="{% url 'yaksh:guardian_register' %}" class="text_muted"><small>Create Guardian acc.  </small></a>
-        </span>
-      </span>
+        </div>
+      </div>
+
+      <center>
+      <div class="dropdown">
+        <button class="btn btn-info btn-rounded dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
+          Sign Up
+        </button>
+
+        <ul class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+          <li><a class="dropdown-item" href="{% url 'yaksh:teacher_register' %}" class="text-muted">Teacher</a></li>
+          <li><a class="dropdown-item" href="{% url 'yaksh:register' %}" class="text-muted">Student</a></li>
+          <li><a class="dropdown-item" href="{% url 'yaksh:hod_register' %}" class="text-muted">HOD</a></li>
+          <li><a class="dropdown-item" href="{% url 'yaksh:guardian_register' %}" class="text_muted">Guardian</a></li>
+        </ul>
+      </div>
+    </center>
     </div>
    </div>
 </div>
