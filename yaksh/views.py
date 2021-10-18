@@ -1,5 +1,18 @@
 import os
 import csv
+import datetime
+import json
+import zipfile
+import markdown
+import ruamel
+import pandas as pd
+import numpy as np
+import pytz
+import requests
+from collections import defaultdict
+from datetime import date 
+from textwrap import dedent
+from taggit.models import Tag
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
 from django.contrib.auth import login, logout, authenticate
 from django.shortcuts import render, get_object_or_404, redirect
@@ -17,23 +30,15 @@ from django.utils import timezone
 from django.core.exceptions import (
     MultipleObjectsReturned, ObjectDoesNotExist
 )
-import datetime
-import pytz
+from django.views.decorators.csrf import csrf_exempt
+from yaksh.paytm import Checksum
+MERCHANT_KEY="bKMfNxPPf_QdZppa"
+
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib import messages
-import requests
-from taggit.models import Tag
 from django.urls import reverse
 from django.conf import settings
-import json
-import numpy as np
-from textwrap import dedent
-import zipfile
-import markdown
-import ruamel
-import pandas as pd
-import numpy as np
-from datetime import date 
+
 
 try:
     from io import StringIO as string_io
@@ -44,7 +49,7 @@ import re
 from online_test.celery_settings import app
 from yaksh.code_server import get_result as get_result_from_code_server
 from yaksh.models import (
-    Answer, AnswerPaper, AssignmentUpload, Course, FileUpload, FloatTestCase,
+    Purchase_Premium, Real_Answer_Paper, Answer, AnswerPaper, AssignmentUpload, Course, FileUpload, FloatTestCase,
     HookTestCase, IntegerTestCase, McqTestCase, Profile,
     QuestionPaper, QuestionSet, Quiz, Question, StandardTestCase,
     StdIOBasedTestCase, StringTestCase, TestCase, User,
@@ -431,10 +436,13 @@ def quizlist_user(request, enrolled=None, msg=None):
                 'completion_percentage': _percent,
             }
         )
+    premium_user=Purchase_Premium.objects.all()
 
     messages.info(request, msg)
     context = {
-        'user': user, 'courses': courses_data,
+        'premium_user':premium_user,
+        'user': user,
+        'courses': courses_data,
         'title': title
     }
 
@@ -759,6 +767,7 @@ def guardian_dashboard(request):
         course_enrolled = []
         course_completed = {}
         quiz_marks = {}
+
         """for each course"""
         for course in Course.objects.filter(students=User.objects.get(username=ward_selected).id):
             course_enrolled.append(course)
@@ -1383,10 +1392,12 @@ def quit(request, reason=None, attempt_num=None, questionpaper_id=None,
                                     attempt_number=attempt_num,
                                     question_paper=questionpaper_id,
                                     course_id=course_id)
+    course=Course.objects.get(id=course_id)
     context = {'paper': paper, 'message': reason, 'course_id': course_id,
-               'module_id': module_id}
+               'module_id': module_id,'course':course}
     return my_render_to_response(request, 'yaksh/quit.html', context)
 
+from collections import Counter
 
 @login_required
 @email_verified
@@ -1411,55 +1422,83 @@ def complete(request, reason=None, attempt_num=None, questionpaper_id=None,
         course = Course.objects.get(id=course_id)
         learning_module = course.learning_module.get(id=module_id)
         learning_unit = learning_module.learning_unit.get(quiz=q_paper.quiz)
-        idd=questionpaper_id
-        uuser=request.user
+        course_name_quiz = Course.objects.get(name=course.name)
+        idd = questionpaper_id
+        uuser = request.user
         #getgrade
-        a=AnswerPaper.objects.all().filter(user=uuser).filter(question_paper_id=idd).values()
+        a = AnswerPaper.objects.all().filter(user=uuser).filter(question_paper_id=idd).values()
         for item in a :
             grade=item['marks_obtained']
-        grade=int(grade)
-
+        grade = int(grade)
+        newgrade = 0
+        total_grades=int(q_paper.total_marks)
         
         #unanswered questions
-        unattempted=int(paper.questions_unanswered.values().count())
+        unattempted = int(paper.questions_unanswered.values().count())
         #answered questions
         answered=int(paper.questions_answered.values().count())
         #for number of questions in question paper
-        total_questions=answered+unattempted
+        total_questions = answered + unattempted
         #for correct answers
-        questionansid=paper.questions_answered.values()
+        questionansid = paper.questions_answered.values()
         
-        result = sum(map(lambda i: i['negative_marks'], questionansid.values()))
-        print(result)
         for item in questionansid:
-            for i in range(0,len(item)):
-                id_d=item['id']
-                correct=paper.is_answer_correct(id_d)
-                
-            if correct== False:
-                newgrade=grade+result
-                new_answer=AnswerPaper.objects.filter(question_paper_id=idd).first()
-                new_answer.grade=newgrade
+            id_d=item['id']
+            correct=paper.is_answer_correct(id_d)
+            # print('correct', correct)
+            if  correct==False :
+                # print('Marks:', item['negative_marks'])
+                grade = int(item['negative_marks'])
+                new_answer = AnswerPaper.objects.filter(question_paper_id=idd).first()
+                new_answer.marks_obtained = grade
                 new_answer.save()
-                total_grades=int(q_paper.total_marks)
-
+                 
             else:
-                newgrade=grade    
-                total_grades=int(q_paper.total_marks)
-            
+                grade = int(item['points']) 
+            newgrade = newgrade + grade
+
+    user=request.user
+    percentage=(newgrade/total_grades)*100
+    result=""
+    if (newgrade/total_grades)*100 <=30:
+        result="fail"
+    elif (newgrade/total_grades)*100 > 30:
+        result="pass"
 
 
-       
-        paper.update_marks()
-        paper.set_end_time(timezone.now())
-        message = reason or "Quiz has been submitted"
-            
-        context = {'message': message, 'paper': paper,
-                   'module_id': learning_module.id,
-                   'course_id': course_id, 'learning_unit': learning_unit,'total_grades':total_grades,'newgrade':newgrade}
-        if is_moderator(user):
-            context['user'] = "moderator"
-        return my_render_to_response(request, 'yaksh/complete.html', context)
+
+    
+    paper.update_marks()
+    paper.set_end_time(timezone.now())
+    message = reason or "Quiz has been submitted"
+
+         
+    user=request.user
+    if request.method == "POST":
+        if Real_Answer_Paper.objects.filter(attempt_number=paper.attempt_number,username=user.username,course_name=Real_Answer_Paper.course_name):
+            return redirect('/exam')
+        else:
+            username=request.POST.get('username', f'{user.username}')
+            attempt_number=request.POST.get('attempt_number',f'{paper.attempt_number}')
+            marks_obtained=request.POST.get('marks_obtained',f'{newgrade}')
+            percentage=request.POST.get('percentage',f'{percentage}')
+            result=request.POST.get('result', f'{result}')
+            status=request.POST.get('status','completed')
+            course_name=request.POST.get('course_name', '')
+         
+            real_answer_paper=Real_Answer_Paper(username=username,
+                attempt_number=attempt_number,
+                marks_obtained=marks_obtained,
+                percentage=percentage,
+                result=result,
+                status=status,
+                course_name=course_name)
+            real_answer_paper.save()
+
+    context = {'course_name_quiz':course_name_quiz,'message': message, 'paper': paper,'module_id': learning_module.id,'course_id': course_id,'learning_unit': learning_unit,'total_grades':total_grades,'newgrade':newgrade}
+    if is_moderator(user):
+        context['user'] = "moderator"
+    return my_render_to_response(request, 'yaksh/complete.html', context)
 
 
 @login_required
@@ -1902,9 +1941,10 @@ def _get_questions_from_tags(question_tags, user, active=True, questions=None):
 @email_verified
 def design_questionpaper(request, course_id, quiz_id, questionpaper_id=None):
     user = request.user
-    lang = user.profile.language
-    
-    if not (is_moderator(user) or is_hod(user)):
+    que_tags = Question.objects.filter(
+        active=True, user=user).values_list('tags', flat=True).distinct()
+    all_tags = Tag.objects.filter(id__in=que_tags)
+    if not is_moderator(user):
         raise Http404('You are not allowed to view this page!')
     if quiz_id:
         quiz = get_object_or_404(Quiz, pk=quiz_id)
@@ -1915,15 +1955,7 @@ def design_questionpaper(request, course_id, quiz_id, questionpaper_id=None):
         if not course.is_creator(user) and not course.is_teacher(user):
             raise Http404('This Course does not belong to you')
 
-    if is_hod(user):
-        #questions = Question.objects.get_queryset().filter(language="python", active=True)
-        que_tags = Question.objects.filter(active=True, language=lang).values_list('tags', flat=True).distinct()
-        filter_form = QuestionFilterForm(user=user)
-    else:
-        que_tags = Question.objects.filter(active=True, user=user).values_list('tags', flat=True).distinct()
-        filter_form = QuestionFilterForm(user=user, language=lang)
-
-    all_tags = Tag.objects.filter(id__in=que_tags)
+    filter_form = QuestionFilterForm(user=user)
     questions = None
     marks = None
     state = None
@@ -1936,7 +1968,7 @@ def design_questionpaper(request, course_id, quiz_id, questionpaper_id=None):
     qpaper_form = QuestionPaperForm(instance=question_paper)
 
     if request.method == 'POST':
-        filter_form = QuestionFilterForm(request.POST, user=user, language=user.profile.language)
+        filter_form = QuestionFilterForm(request.POST, user=user)
         qpaper_form = QuestionPaperForm(request.POST, instance=question_paper)
         question_type = request.POST.get('question_type', None)
         marks = request.POST.get('marks', None)
@@ -2058,92 +2090,7 @@ def design_questionpaper(request, course_id, quiz_id, questionpaper_id=None):
     }
     return my_render_to_response(
         request, 'yaksh/design_questionpaper.html', context
-    )
-
-##############################################################################################################
-@login_required
-@email_verified
-def hod_questions(request):
-    """show a list of questions for a specific language"""
-
-    user = request.user
-    context = {}
-    message = None
-    if not is_hod(user):
-        raise Http404("You are not allowed to view this page !")
-
-    if request.method == 'POST':
-        if request.POST.get('delete') == 'delete':
-            data = request.POST.getlist('question')
-            if data is not None:
-                questions = Question.objects.filter(
-                    id__in=data, user_id=user.id, active=True)
-                for question in questions:
-                    question.active = False
-                    question.save()
-            message = "Questions deleted successfully"
-
-        if request.POST.get('upload') == 'upload':
-            form = UploadFileForm(request.POST, request.FILES)
-            if form.is_valid():
-                questions_file = request.FILES['file']
-                file_extension = questions_file.name.split('.')[-1]
-                ques = Question()
-                if file_extension == "zip":
-                    files, extract_path = extract_files(questions_file)
-                    message = ques.read_yaml(extract_path, user, files)
-                elif file_extension in ["yaml", "yml"]:
-                    questions = questions_file.read()
-                    message = ques.load_questions(questions, user)
-                else:
-                    message = "Please Upload a ZIP file or YAML file"
-
-        if request.POST.get('download') == 'download':
-            question_ids = request.POST.getlist('question')
-            if question_ids:
-                question = Question()
-                zip_file = question.dump_questions(question_ids, user)
-                response = HttpResponse(content_type='application/zip')
-                response['Content-Disposition'] = dedent(
-                    '''attachment; filename={0}_questions.zip'''.format(user)
-                )
-                zip_file.seek(0)
-                response.write(zip_file.read())
-                return response
-            else:
-                message = "Please select atleast one question to download"
-
-        if request.POST.get('test') == 'test':
-            question_ids = request.POST.getlist("question")
-            if question_ids:
-                trial_paper, trial_course, trial_module = test_mode(
-                    user, False, question_ids, None)
-                trial_paper.update_total_marks()
-                trial_paper.save()
-                return my_redirect(
-                    reverse("yaksh:start_quiz",
-                            args=[1, trial_module.id, trial_paper.id,
-                                  trial_course.id]
-                            )
-                )
-            else:
-                message = "Please select atleast one question to test"
-    language = user.profile.language
-    questions = Question.objects.get_queryset().filter(language = language, active=True).order_by('-id')
-    form = QuestionFilterForm(user=user)
-    user_tags = questions.values_list('tags', flat=True).distinct()
-    all_tags = Tag.objects.filter(id__in=user_tags)
-    upload_form = UploadFileForm()
-    paginator = Paginator(questions, 30)
-    page = request.GET.get('page')
-    questions = paginator.get_page(page)
-    context['objects'] = questions
-    context['all_tags'] = all_tags
-    context['form'] = form
-    context['upload_form'] = upload_form
-
-    messages.info(request, message)
-    return my_render_to_response(request, 'yaksh/hod_questions.html', context)
+    ) 
 
 #######################################################################################################################
 
@@ -4858,3 +4805,130 @@ def upload_download_course_md(request, course_id):
             'is_upload_download_md': True,
         }
         return my_render_to_response(request, 'yaksh/course_detail.html', context)
+
+@login_required
+@email_verified
+def displayquiz(request, reason=None, attempt_num=None, questionpaper_id=None,
+             course_id=None, module_id=None):
+    user=request.user 
+    user_id=request.user.id
+       
+    
+    a_paper=AnswerPaper.objects.all().filter(user_id=user_id).values()
+    
+    for item in a_paper:
+        q_paperid=item['question_paper_id']
+    q_paper=QuestionPaper.objects.all().filter(id=q_paperid).values()
+
+    paper = AnswerPaper.objects.get(user=user, question_paper=q_paperid )   
+    
+    
+    q_paper=QuestionPaper.objects.all().filter(id=q_paperid).values()
+    for item in q_paper:
+        q_id=item['quiz_id']
+    quiz=Quiz.objects.all().filter(id=q_id).values()
+    questions=paper.questions.values()
+    context={
+        'user':user,
+        'quiz':quiz
+        }
+    return my_render_to_response(request,'yaksh/quizd.html',context)
+
+
+
+def premium(request):
+    user=request.user
+    purchased_premium=""
+    if Purchase_Premium.objects.filter(user_id=user.id):
+        purchased_premium="yes"
+    else: 
+        purchased_premium="no"
+    return render(request, 'yaksh/premium.html', {'purchased_premium':purchased_premium})
+
+
+#Mobile Number:-77777 77777
+#OTP:- 489871
+#cvv:- 123
+
+def checkout(request):
+    for i in Purchase_Premium.objects.all():
+        purc_Premium = i.id
+    user = request.user
+    param_dict={
+        'MID': 'DIY12386817555501617',
+        'ORDER_ID': 'order_id-'+str(purc_Premium)+'@'+str(user.id),
+        'TXN_AMOUNT': '1000',
+        'CUST_ID': 'email',
+        'INDUSTRY_TYPE_ID': 'Retail',
+        'WEBSITE': 'WEBSTAGING',
+        'CHANNEL_ID': 'WEB',
+        # 'CALLBACK_URL':'http://localhost:9000/exam/quizzes/handlerequest/',
+        'CALLBACK_URL':'https://claymould.suvidhaen.com/exam/quizzes/handlerequest/',
+        }
+    user=request.user
+    param_dict['CHECKSUMHASH'] = Checksum.generate_checksum(param_dict, MERCHANT_KEY)
+    
+    user=request.user
+    if_premium=""
+    if Purchase_Premium.objects.filter(user_id=user.id):
+        if_premium="yes"
+    else:
+        if_premium="no"
+
+    return render(request, 'yaksh/payTm.html', {'param_dict': param_dict, 'user':user,'if_premium':if_premium})
+
+
+@csrf_exempt
+def handlerequest(request):
+    user = request.user
+    form = request.POST
+    response_dict = {}
+    for i in form.keys():
+        response_dict[i] = form[i]
+        if i == 'CHECKSUMHASH':
+            checksum = form[i]
+
+    verify = Checksum.verify_checksum(response_dict, MERCHANT_KEY, checksum)
+    if verify:
+        if response_dict['RESPCODE'] == '01':
+            print('order successful')
+        else:
+            print('order was not successful because ' + response_dict['RESPMSG'])
+
+    spliting_order_id=response_dict['ORDERID'].split('@')
+    user_id=spliting_order_id[1]
+    if request.method=="POST":
+        user_id=request.POST.get('user_id', f'{user_id}')
+        purchase_premium = Purchase_Premium(user_id=user_id)
+        purchase_premium.save()
+    return render(request, 'yaksh/paytmstatus.html',{'response': response_dict, 'user_id':user_id})
+
+
+@login_required
+@email_verified
+def your_premium_course(request):
+    user=request.user
+    check_premium=""
+    if Purchase_Premium.objects.filter(user_id=user.id):
+        check_premium="yes"
+        print("yes")
+    else:
+        check_premium="no"
+        print('no')
+    return render(request, 'yaksh/your_premium_course.html', {'check_premium':check_premium})
+
+
+@login_required
+@email_verified
+def statistics(request):
+    userr=request.user
+    user_details=AnswerPaper.objects.filter(user=userr.id)
+
+    marks_list= ([(item.marks_obtained) for item in user_details])
+    total_marks_obtained=sum(marks_list)
+
+    attempt_list=([(item.attempt_number) for item in user_details])
+    total_attempt=len(attempt_list)
+
+    context={'total_attempt':total_attempt,'total_marks_obtained':total_marks_obtained,'user_details':user_details}
+    return render(request, 'yaksh/user_statistics.html',context) 

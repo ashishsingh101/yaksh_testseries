@@ -6,7 +6,7 @@
 {% block nav %}
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <a class="navbar-brand" href="{% url 'yaksh:index' %}">
-        <img src="{% static 'yaksh/images/yaksh_banner.png' %}" alt="YAKSH">
+        <img src="{% static 'yaksh/images/main_logo.png' %}" alt="YAKSH" width="45px" height="40px">
     </a>
 </nav>
 {% endblock %}
@@ -14,7 +14,6 @@
 {% block content %}
 <br><br>
 <div class="container mt--8 pb-5">
-  
    <div class="row justify-content-center">
     <div class="col-lg-5 col-md-7">
       <div class="card bg-secondary border-0 mb-0">
@@ -83,6 +82,7 @@
           </form>
         </div>
       </div>
+
       <div >
         <div style="padding-right:35px ;">
           <a href="{% url 'password_reset' %}" class="text-muted"><small>Forgot password?  </small></a>
@@ -94,7 +94,7 @@
         <button class="btn btn-info btn-rounded dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
           Sign Up
         </button>
-      
+
         <ul class="dropdown-menu" aria-labelledby="dropdownMenuLink">
           <li><a class="dropdown-item" href="{% url 'yaksh:teacher_register' %}" class="text-muted">Teacher</a></li>
           <li><a class="dropdown-item" href="{% url 'yaksh:register' %}" class="text-muted">Student</a></li>
@@ -103,7 +103,6 @@
         </ul>
       </div>
     </center>
-
     </div>
    </div>
 </div>
