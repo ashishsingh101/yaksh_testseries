@@ -35,6 +35,22 @@ def completed(answerpaper):
     return answerpaper.filter(status="completed").count()
 
 
+
+@register.filter(name="sub")
+def sub(value, arg):
+    return value - arg
+
+
+@register.filter(name="div")
+def sub(value, arg):
+    return value / arg
+
+
+@register.filter(name="mul")
+def sub(value, arg):
+    return value * arg
+
+
 @register.simple_tag(name="inprogress")
 def inprogress(answerpaper):
     return answerpaper.filter(status="inprogress").count()

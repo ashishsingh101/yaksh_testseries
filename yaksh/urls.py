@@ -5,6 +5,13 @@ from yaksh import views
 
 urlpatterns = [
     url(r'^$', views.index, name="index"),
+
+    url(r'^quizzes/your_premium_course/$', views.your_premium_course, name="your_premium_course"),
+    url(r'^quizzes/checkout/$', views.checkout, name="checkout"),
+    url(r'^premium/$', views.premium, name="premium"),
+    url(r'^quizzes/handlerequest/$', views.handlerequest, name="handlerequest"),
+    url(r'^statistics/$', views.statistics, name="statistics"),
+
     url(r'^login/$', views.user_login, name='login'),
     url(r'^logout/$', views.user_logout, name="logout"),
     url(r'^update_email/$', views.update_email, name="update_email"),
@@ -15,6 +22,10 @@ urlpatterns = [
     # url(r'^score/$', views.displaygrade, name="grade"),
     # url(r'^score/(?P<questionpaper_id>\d+)$', views.displaygrade, name="grade"),
     url(r'^quizzes/$', views.quizlist_user, name='quizlist_user'),
+    url(r'^quizbreakdown/$',views.displayquiz,name='displayquiz'),
+    url(r'^quizbreakdown/(?P<attempt_num>\d+)/(?P<module_id>\d+)/'
+        '(?P<questionpaper_id>\d+)/(?P<course_id>\d+)/$', views.displayquiz,
+        name="displayquiz"),
     url(r'^results/$', views.results_user),
     url(r'^start/(?P<questionpaper_id>\d+)/(?P<module_id>\d+)/'
         '(?P<course_id>\d+)/$', views.start, name="start_quiz"),
@@ -282,7 +293,7 @@ urlpatterns = [
     path('test/', views.testing, name="test"),
     path('register/teacher/', views.teacher_register, name="teacher_register"), # path for teacher registration
     path('register/hod/', views.hod_register, name="hod_register"), #path for HOD registration
-    path('hod/questions/', views.hod_questions, name="hod_questions"), # questions visible to a respective HODs 
+    # path('hod/questions/', views.hod_questions, name="hod_questions"), # questions visible to a respective HODs 
     path('register/guardian/', views.guardian_register, name="guardian_register"), # path for parent registration
     path('guardian/dashboard/', views.guardian_dashboard, name="guardian_dashboard"), # path for parent dashboard
     path('guardian/dashboard/calender/', views.guardian_calender, name="guardian_calender"), #path for calender

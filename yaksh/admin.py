@@ -1,5 +1,5 @@
 from yaksh.models import AttendanceCourse, Question, Quiz, QuestionPaper, Profile, Guardian, Ward
-from yaksh.models import (TestCase, StandardTestCase, StdIOBasedTestCase,
+from yaksh.models import (Purchase_Premium,Real_Answer_Paper,TestCase, StandardTestCase, StdIOBasedTestCase,
                           Course, AnswerPaper, CourseStatus, LearningModule,
                           Lesson, Post, Comment, Topic, TableOfContents,
                           LessonQuizAnswer, Answer, AssignmentUpload, Attendance, AttendanceCourse
@@ -21,8 +21,7 @@ class AnswerPaperAdmin(admin.ModelAdmin):
     readonly_fields = ["course", "question_paper"]
 
     def get_form(self, request, obj=None, **kwargs):
-        self.exclude = ("answers", "questions_unanswered",
-                        "questions_answered", "questions")
+        self.exclude = ("answers", "questions")
         form = super(AnswerPaperAdmin, self).get_form(request, obj, **kwargs)
         return form
 
@@ -80,3 +79,5 @@ admin.site.register(Answer)
 admin.site.register(AssignmentUpload)
 admin.site.register(Guardian, GuardianAdmin)
 admin.site.register(Attendance, AttendanceAdmin)
+admin.site.register(Purchase_Premium)
+admin.site.register(Real_Answer_Paper)

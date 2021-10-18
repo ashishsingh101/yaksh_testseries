@@ -1,18 +1,22 @@
 {% extends "base.html" %}
 {% load static %}
+{% load custom_filters %}
 
 {% block title %} Complete {% endblock %}
 
 {% block nav %}
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
     <a class="navbar-brand" href="{% url 'yaksh:index' %}">
-        <img src="{% static 'yaksh/images/yaksh_banner.png' %}" alt="YAKSH">
+        <img src="{% static 'yaksh/images/main_logo.png' %}" alt="YAKSH" width="45px" height="40px">
     </a>
 </nav>
 {% endblock %}
 
 {% block content %}
 <br>
+{% if check_attempt == "yes" %}
+<center><h1>you have already attempted it</h1></center>
+{% else %}
 {% if module_id and not paper.course.is_trial %}
 <center>
     <div class="alert alert-info col-md-8">
@@ -54,6 +58,7 @@
     <h5>
         <span class="alert alert-success">{{message}}</span>
     </h5>
+    <br>
     <h1> Dear {{user }} your score is {{newgrade}} / {{total_grades}}  and has been recorded</h1>
 </center>
 <center>
@@ -65,14 +70,30 @@
             </span>
         </a>
     {% else %}
-        <a href="{% url 'yaksh:next_unit' course_id module_id learning_unit.id %}" class="btn btn-info btn-lg" id="Next"> Next
-            <span class="fa fa-step-forward">
-            </span>
+<form action="/exam/complete/{{paper.attempt_number}}/{{module_id}}/{{new_answer.question_paper.id}}/{{course_id}}/" method="post">{% csrf_token %}
+<input name="username" value="{{user.username}}" type="hidden"></input>
+<input name="attempt_number" value="{{paper.attempt_number}}" type="hidden"></input>
+<input name="marks_obtained" value="{{newgrade}}" type="hidden"></input>
+<input name="percentage" value="{{newgrade|div:total_grades|mul:100}}" type="hidden"></input>
+<input name="result" value="{{result}}" type="hidden"></input>
+<input name="status" value="completed" type="hidden"></input>
+<input name="course_name" value="{{course_name_quiz}}" type="hidden"></input>
+
+
+<center><a href="/exam" class="btn btn-primary btn-lg">Next</a></center>
+
+
+</form>
+
+
         </a>
     {% endif %}
 {% else %}
     <a href="{% url 'yaksh:index' %}" id="home" class="btn btn-primary btn-lg"> Home </a>
 {% endif %}
+{% endif %}
+{{module_id.name}}
+
 </center>
 <br><br>
 {% endblock content %}

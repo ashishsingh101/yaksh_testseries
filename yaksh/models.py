@@ -17,6 +17,11 @@ from collections import Counter, defaultdict
 import glob
 import sys
 import traceback
+from django.http import request
+from django.db.models import Sum
+from django.db.models.functions import Abs
+
+
 try:
     from io import StringIO as string_io
 except ImportError:
@@ -1429,7 +1434,7 @@ class Question(models.Model):
 
     # Number of points for the question.
     points = models.FloatField(default=3.0)
-    negative_marks = models.FloatField(default=-1.0)
+    negative_marks = models.IntegerField(default=-1.0)
 
     # The language for question.
     language = models.CharField(max_length=24,
@@ -2499,9 +2504,29 @@ class AnswerPaper(models.Model):
     def _update_marks_obtained(self):
         """Updates the total marks earned by student for this paper."""
         marks = 0.0
+        questionansid = self.questions_answered.values()
+        grade = self.marks_obtained
+        new_grade=0
+
+        for item in questionansid:
+            id_d=item['id']
+            correct = self.is_answer_correct(id_d)
+            # print('correct', correct)
+            if  correct==False :
+                # print('Marks:', item['negative_marks'])
+                grade = int(item['negative_marks'])
+                 
+            else:
+                grade = int(item['points'])
+            new_grade += grade
+
+        self.marks_obtained = new_grade            
+        
+        """
         for question in self.questions.all():
             marks += self._get_marks_for_question(question)
         self.marks_obtained = marks
+        """
 
     def _update_percent(self):
         """Updates the percent gained by the student for this paper."""
@@ -2577,9 +2602,35 @@ class AnswerPaper(models.Model):
 
     def is_answer_correct(self, question_id):
         ''' Return marks of a question answered'''
+        
+           
         return self.answers.filter(question_id=question_id,
                                    correct=True).exists()
+ 
+    def is_ok(self,question_id):
+        a=self.answers.filter(question_id=question_id,
+                                   correct=True).exists()
+        
+        #boj=self.questions.all().filter(id=question_id).values('negative_marks').all()
+        boj=self.questions.filter(id=question_id).values().annotate(Sum('negative_marks'))
+        b= self.questions.filter(id=question_id).aggregate(Sum('negative_marks'))
+        b=dict(Counter(b))
 
+        xp={}
+
+        for x in boj:
+            xp["negative"]=x['negative_marks']
+
+
+        
+        if a:
+            b=None
+        else:
+            b=b
+            boj
+            
+
+        return xp
     def is_attempt_inprogress(self):
         if self.status == 'inprogress':
             return self.time_left() > 0
@@ -3473,3 +3524,27 @@ class QRcodeHandler(models.Model):
 
     def can_use(self):
         return self.answerpaper.is_attempt_inprogress()
+
+        
+
+class Real_Answer_Paper(models.Model):
+    username=models.CharField(max_length=200, default="")
+    attempt_number=models.IntegerField(default="")
+    marks_obtained=models.IntegerField(default="")
+    percentage=models.FloatField(default="")
+    result=models.CharField(max_length=50, default="")
+    status=models.CharField(max_length=50, default="")
+    course_name=models.CharField(max_length=1000, default="")
+
+    def __str__(self):
+        return "username:-"+ "(" +self.username+ ")" + " "+"quiz Name:-"+ "(" +self.course_name+ ")"
+
+
+
+
+
+class Purchase_Premium(models.Model):
+    user_id=models.IntegerField(default="")
+
+    def __str__(self):
+        return str(self.user_id)
