@@ -69,7 +69,7 @@ INSTALLED_APPS = (
     'corsheaders',
     'rest_framework.authtoken',
     'storages',
-    'schema_graph'
+    'schema_graph',
 )
 
 MIDDLEWARE = (

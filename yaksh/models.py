@@ -65,6 +65,7 @@ from yaksh.code_server import (
 from yaksh.settings import SERVER_POOL_PORT, SERVER_HOST_NAME
 from .file_utils import extract_files, delete_files
 from grades.models import GradingSystem
+from phonenumber_field.modelfields import PhoneNumberField
 
 
 languages = (
@@ -1312,6 +1313,7 @@ class ConcurrentUser(models.Model):
 class Profile(models.Model):
     """Profile for a user to store roll number and other details."""
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    phone_number = PhoneNumberField(null = True, blank = True)
     roll_number = models.CharField(max_length=20, blank=True, null=True, default=None)
     staff_number = models.CharField(max_length=20, blank=True, null=True, default=None)
     institute = models.CharField(max_length=128)
