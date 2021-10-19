@@ -20,6 +20,7 @@ import pytz
 from ast import literal_eval
 
 from .send_emails import generate_activation_key
+from phonenumber_field.formfields import PhoneNumberField
 
 languages = (("", "Select Language"),) + languages
 
@@ -307,6 +308,9 @@ class UserRegisterForm(forms.Form):
     last_name = forms.CharField(max_length=30, widget=forms.TextInput(
         {'class': form_input_class, 'placeholder': "Last Name"}
         ))
+    phone_number =PhoneNumberField(widget=forms.TextInput(
+            {'class': form_input_class, 'placeholder': "Phone Number(+91 XXXXXXXXXX)"}
+        ))
     roll_number = forms.CharField(
         max_length=30, help_text="Use a dummy if you don't have one.",
         widget=forms.TextInput(
@@ -380,6 +384,7 @@ class UserRegisterForm(forms.Form):
 
         cleaned_data = self.cleaned_data
         new_profile = Profile(user=new_user)
+        new_profile.phone_number = cleaned_data['phone_number']
         new_profile.roll_number = cleaned_data["roll_number"]
         new_profile.institute = cleaned_data["institute"]
         new_profile.department = cleaned_data["department"]
