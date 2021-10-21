@@ -39,12 +39,12 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 # This is a required field
-DOMAIN_HOST = "http://127.0.0.1:8000"
+DOMAIN_HOST = "http://localhost:9000"
 #DOMAIN_HOST = "https://claymould.suvidhaen.com"
 
 URL_ROOT = ''
 
-SOCIAL_AUTH_REDIRECT_IS_HTTPS = True
+SOCIAL_AUTH_REDIRECT_IS_HTTPS = False
 
 # Application definition
 
@@ -130,7 +130,7 @@ STATIC_URL = '/static/'
 
 LOGIN_URL = '/exam/login/'
 
-LOGIN_REDIRECT_URL = '/exam/'
+LOGIN_REDIRECT_URL = '/exam/quizzes/'
 
 SOCIAL_AUTH_LOGIN_ERROR_URL = '/exam/login/'
 
