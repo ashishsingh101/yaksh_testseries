@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='profile',
             name='phone_number',
-            field=phonenumber_field.modelfields.PhoneNumberField(blank=True, max_length=128, null=True, region=None),
+            field=phonenumber_field.modelfields.PhoneNumberField(blank=True, max_length=128, null=True),
         ),
         migrations.AlterField(
             model_name='attendance',

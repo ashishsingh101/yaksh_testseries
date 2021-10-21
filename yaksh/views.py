@@ -4922,7 +4922,13 @@ def your_premium_course(request):
 @email_verified
 def statistics(request):
     userr=request.user
+    check_student=""
     user_details=AnswerPaper.objects.filter(user=userr.id)
+
+    if user_details:
+        check_student="yes"
+    else:
+        check_student="no"
 
     marks_list= ([(item.marks_obtained) for item in user_details])
     total_marks_obtained=sum(marks_list)
@@ -4930,5 +4936,5 @@ def statistics(request):
     attempt_list=([(item.attempt_number) for item in user_details])
     total_attempt=len(attempt_list)
 
-    context={'total_attempt':total_attempt,'total_marks_obtained':total_marks_obtained,'user_details':user_details}
+    context={'check_student':check_student,'total_attempt':total_attempt,'total_marks_obtained':total_marks_obtained,'user_details':user_details}
     return render(request, 'yaksh/user_statistics.html',context) 

@@ -7,7 +7,10 @@
 <body>
 
 
+{% if check_student == "no" %}
+<center></h2><b>You have not Attempted any Quiz,Kindly attempt any Quiz to see you Performence</b></h2></center>
 
+{% elif check_student == "yes" %}
 <div class="container mt-1">
     <div class="row">
         <div class="col-12">
@@ -41,7 +44,7 @@
 <br>
 <div class="container">
 </div>
-
+{% endif %}
 
 {% endblock %}
 
